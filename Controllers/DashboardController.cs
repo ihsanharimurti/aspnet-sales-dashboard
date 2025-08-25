@@ -11,99 +11,83 @@ public class DashboardController : Controller
         _dataService = dataService;
     }
 
-    public IActionResult Index(string category = "", string region = "", string salesperson = "", DateTime? fromDate = null, DateTime? toDate = null)
+    public IActionResult Index(string category = "", string region = "", string salesperson = "", 
+        DateTime? fromDate = null, DateTime? toDate = null, int page = 1, int pageSize = 10)
     {
-        // Get all data from dummy service
+        // Get and filter data
         var allData = _dataService.GetSalesData();
-
-        // Build query with filters
         var query = allData.AsQueryable();
 
         if (!string.IsNullOrEmpty(category) && category != "All")
-        {
             query = query.Where(x => x.Category == category);
-        }
 
         if (!string.IsNullOrEmpty(region) && region != "All")
-        {
             query = query.Where(x => x.Region == region);
-        }
 
         if (!string.IsNullOrEmpty(salesperson) && salesperson != "All")
-        {
             query = query.Where(x => x.SalesPersonName == salesperson);
-        }
 
         if (fromDate.HasValue)
-        {
             query = query.Where(x => x.SaleDate >= fromDate.Value);
-        }
 
         if (toDate.HasValue)
-        {
             query = query.Where(x => x.SaleDate <= toDate.Value);
-        }
 
-        // Get filtered data
-        var salesData = query.OrderByDescending(x => x.SaleDate).ToList();
+        var filteredData = query.OrderByDescending(x => x.SaleDate).ToList();
 
-        // Prepare dropdown data
-        ViewBag.Categories = GetCategoriesSelectList(allData);
-        ViewBag.Regions = GetRegionsSelectList(allData);
-        ViewBag.SalesPersons = GetSalesPersonsSelectList(allData);
+        // Pagination
+        var totalItems = filteredData.Count;
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+        var items = filteredData.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
-        // Prepare current filter values
+        // ViewBag data
+        ViewBag.Categories = GetSelectList(allData.Select(x => x.Category).Distinct().OrderBy(x => x).ToList());
+        ViewBag.Regions = GetSelectList(allData.Select(x => x.Region).Distinct().OrderBy(x => x).ToList());
+        ViewBag.SalesPersons = GetSelectList(allData.Select(x => x.SalesPersonName).Distinct().OrderBy(x => x).ToList());
+        ViewBag.PageSizes = new SelectList(new[] { 10, 25, 50, 100 }, pageSize);
+
         ViewBag.CurrentCategory = category;
         ViewBag.CurrentRegion = region;
         ViewBag.CurrentSalesperson = salesperson;
         ViewBag.CurrentFromDate = fromDate?.ToString("yyyy-MM-dd");
         ViewBag.CurrentToDate = toDate?.ToString("yyyy-MM-dd");
 
-        // Calculate summary statistics
-        var totalSales = salesData.Sum(x => x.Amount);
-        var averageSale = salesData.Any() ? salesData.Average(x => x.Amount) : 0;
-        var totalTransactions = salesData.Count;
+        ViewBag.TotalSales = filteredData.Sum(x => x.Amount);
+        ViewBag.AverageSale = filteredData.Any() ? filteredData.Average(x => x.Amount) : 0;
+        ViewBag.TotalTransactions = filteredData.Count;
 
-        ViewBag.TotalSales = totalSales;
-        ViewBag.AverageSale = averageSale;
-        ViewBag.TotalTransactions = totalTransactions;
+        ViewBag.CurrentPage = page;
+        ViewBag.PageSize = pageSize;
+        ViewBag.TotalPages = totalPages;
+        ViewBag.TotalItems = totalItems;
+        ViewBag.HasPrevious = page > 1;
+        ViewBag.HasNext = page < totalPages;
 
-        return View(salesData);
+        return View(items);
     }
 
     [HttpPost]
-    public IActionResult GetChartData(string category = "", string region = "", string salesperson = "", DateTime? fromDate = null, DateTime? toDate = null)
+    public IActionResult GetChartData(string category = "", string region = "", string salesperson = "", 
+        DateTime? fromDate = null, DateTime? toDate = null)
     {
         var allData = _dataService.GetSalesData();
         var query = allData.AsQueryable();
 
-        // Apply same filters as Index method
         if (!string.IsNullOrEmpty(category) && category != "All")
-        {
             query = query.Where(x => x.Category == category);
-        }
 
         if (!string.IsNullOrEmpty(region) && region != "All")
-        {
             query = query.Where(x => x.Region == region);
-        }
 
         if (!string.IsNullOrEmpty(salesperson) && salesperson != "All")
-        {
             query = query.Where(x => x.SalesPersonName == salesperson);
-        }
 
         if (fromDate.HasValue)
-        {
             query = query.Where(x => x.SaleDate >= fromDate.Value);
-        }
 
         if (toDate.HasValue)
-        {
             query = query.Where(x => x.SaleDate <= toDate.Value);
-        }
 
-        // Group by month for chart
         var chartData = query
             .GroupBy(x => new { x.SaleDate.Year, x.SaleDate.Month })
             .Select(g => new {
@@ -116,39 +100,10 @@ public class DashboardController : Controller
         return Json(chartData);
     }
 
-    private SelectList GetCategoriesSelectList(List<SalesData> data)
+    private SelectList GetSelectList(List<string> items)
     {
-        var categories = data
-            .Select(x => x.Category)
-            .Distinct()
-            .OrderBy(x => x)
-            .ToList();
-
-        categories.Insert(0, "All");
-        return new SelectList(categories);
-    }
-
-    private SelectList GetRegionsSelectList(List<SalesData> data)
-    {
-        var regions = data
-            .Select(x => x.Region)
-            .Distinct()
-            .OrderBy(x => x)
-            .ToList();
-
-        regions.Insert(0, "All");
-        return new SelectList(regions);
-    }
-
-    private SelectList GetSalesPersonsSelectList(List<SalesData> data)
-    {
-        var salesPersons = data
-            .Select(x => x.SalesPersonName)
-            .Distinct()
-            .OrderBy(x => x)
-            .ToList();
-
-        salesPersons.Insert(0, "All");
-        return new SelectList(salesPersons);
+        var list = new List<string> { "All" };
+        list.AddRange(items);
+        return new SelectList(list);
     }
 }

@@ -41,7 +41,6 @@
             border-radius: 10px;
             padding: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom:80px;
         }
     </style>
 </head>
@@ -52,35 +51,33 @@
         <!-- Filters -->
         <div class="filter-container">
             <h5>Filters</h5>
-            <form method="get" id="mainForm">
-                <input type="hidden" name="page" value="1">
-                <input type="hidden" name="pageSize" value="@ViewBag.PageSize" id="pageSizeHidden">
+            <form id="filterForm" method="get">
                 <div class="row">
                     <div class="col-md-2">
                         <label class="form-label">Category</label>
-                        @Html.DropDownList("category", (SelectList)ViewBag.Categories, new { @class = "form-select" })
+                        @Html.DropDownList("category", (SelectList)ViewBag.Categories, new { @class = "form-select", id = "categoryFilter" })
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Region</label>
-                        @Html.DropDownList("region", (SelectList)ViewBag.Regions, new { @class = "form-select" })
+                        @Html.DropDownList("region", (SelectList)ViewBag.Regions, new { @class = "form-select", id = "regionFilter" })
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Salesperson</label>
-                        @Html.DropDownList("salesperson", (SelectList)ViewBag.SalesPersons, new { @class = "form-select" })
+                        @Html.DropDownList("salesperson", (SelectList)ViewBag.SalesPersons, new { @class = "form-select", id = "salespersonFilter" })
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">From Date</label>
-                        <input type="date" name="fromDate" class="form-control" value="@ViewBag.CurrentFromDate">
+                        <input type="date" name="fromDate" class="form-control" value="@ViewBag.CurrentFromDate" id="fromDateFilter">
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">To Date</label>
-                        <input type="date" name="toDate" class="form-control" value="@ViewBag.CurrentToDate">
+                        <input type="date" name="toDate" class="form-control" value="@ViewBag.CurrentToDate" id="toDateFilter">
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">&nbsp;</label>
                         <div>
-                            <button type="submit" class="btn btn-primary">Apply</button>
-                            <a href="/Dashboard" class="btn btn-secondary">Clear</a>
+                            <button type="submit" class="btn btn-primary">Apply Filters</button>
+                            <button type="button" class="btn btn-secondary" id="clearFilters">Clear</button>
                         </div>
                     </div>
                 </div>
@@ -110,22 +107,14 @@
         </div>
 
         <!-- Chart -->
-        @* <div class="chart-container">
+        <div class="chart-container">
             <h5>Sales Trend</h5>
             <canvas id="salesChart" width="400" height="100"></canvas>
-        </div> *@
+        </div>
 
         <!-- Data Table -->
         <div class="table-container">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5>Sales Data</h5>
-                <div>
-                    <label>Show:</label>
-                    @Html.DropDownList("pageSize", (SelectList)ViewBag.PageSizes, new { @class = "form-select form-select-sm d-inline-block", style = "width: auto;", onchange = "changePageSize()" })
-                    <span>entries</span>
-                </div>
-            </div>
-            
+            <h5>Sales Data</h5>
             <div class="table-responsive">
                 <table class="table table-striped">
                     <thead>
@@ -153,40 +142,20 @@
                     </tbody>
                 </table>
             </div>
-
-            <!-- Simple Pagination -->
-            @if ((int)ViewBag.TotalPages > 1)
-            {
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <div>
-                        Page @ViewBag.CurrentPage of @ViewBag.TotalPages (@ViewBag.TotalItems total records)
-                    </div>
-                    <div>
-                        @if ((bool)ViewBag.HasPrevious)
-                        {
-                            <a href="javascript:void(0)" onclick="goToPage(@((int)ViewBag.CurrentPage - 1))" class="btn btn-outline-primary btn-sm me-2">Previous</a>
-                        }
-                        
-                        @if ((bool)ViewBag.HasNext)
-                        {
-                            <a href="javascript:void(0)" onclick="goToPage(@((int)ViewBag.CurrentPage + 1))" class="btn btn-outline-primary btn-sm">Next</a>
-                        }
-                    </div>
-                </div>
-            }
         </div>
     </div>
 
     <script>
+        // Initialize chart
         let salesChart;
         
         function updateChart() {
             const formData = {
-                category: $('select[name="category"]').val(),
-                region: $('select[name="region"]').val(),
-                salesperson: $('select[name="salesperson"]').val(),
-                fromDate: $('input[name="fromDate"]').val(),
-                toDate: $('input[name="toDate"]').val()
+                category: $('#categoryFilter').val(),
+                region: $('#regionFilter').val(),
+                salesperson: $('#salespersonFilter').val(),
+                fromDate: $('#fromDateFilter').val(),
+                toDate: $('#toDateFilter').val()
             };
 
             $.ajax({
@@ -235,33 +204,20 @@
             });
         }
 
+        // Clear filters
+        $('#clearFilters').click(function() {
+            $('#categoryFilter').val('All');
+            $('#regionFilter').val('All');
+            $('#salespersonFilter').val('All');
+            $('#fromDateFilter').val('');
+            $('#toDateFilter').val('');
+            $('#filterForm').submit();
+        });
+
+        // Load chart on page load
         $(document).ready(function() {
             updateChart();
         });
-
-        // Simple pagination function
-        function goToPage(page) {
-            const form = document.getElementById('mainForm');
-            const pageInput = form.querySelector('input[name="page"]');
-            const pageSizeSelect = document.querySelector('select[name="pageSize"]');
-            const pageSizeHidden = document.getElementById('pageSizeHidden');
-            
-            pageInput.value = page;
-            pageSizeHidden.value = pageSizeSelect.value;
-            form.submit();
-        }
-
-        // Page size change function
-        function changePageSize() {
-            const form = document.getElementById('mainForm');
-            const pageInput = form.querySelector('input[name="page"]');
-            const pageSizeSelect = document.querySelector('select[name="pageSize"]');
-            const pageSizeHidden = document.getElementById('pageSizeHidden');
-            
-            pageInput.value = 1; // Reset to first page
-            pageSizeHidden.value = pageSizeSelect.value;
-            form.submit();
-        }
     </script>
 </body>
 </html>

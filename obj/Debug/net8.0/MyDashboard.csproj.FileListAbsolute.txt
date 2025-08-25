@@ -28,3 +28,4 @@ C:\Users\harim\MyDashboard\obj\Debug\net8.0\refint\MyDashboard.dll
 C:\Users\harim\MyDashboard\obj\Debug\net8.0\MyDashboard.pdb
 C:\Users\harim\MyDashboard\obj\Debug\net8.0\MyDashboard.genruntimeconfig.cache
 C:\Users\harim\MyDashboard\obj\Debug\net8.0\ref\MyDashboard.dll
+C:\Users\harim\MyDashboard\obj\Debug\net8.0\MyDashboard.sourcelink.json
