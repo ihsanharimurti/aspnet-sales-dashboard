@@ -1,0 +1,179 @@
+// Controllers/DashboardController.cs
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using YourApp.Data;
+
+namespace YourApp.Controllers
+{
+    public class DashboardController : Controller
+    {
+        private readonly ApplicationDbContext _context;
+
+        public DashboardController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<IActionResult> Index(string category = "", string region = "", string salesperson = "", 
+            DateTime? fromDate = null, DateTime? toDate = null, int page = 1, int pageSize = 10)
+        {
+            // Build query
+            var query = _context.SalesData.AsQueryable();
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(category) && category != "All")
+                query = query.Where(x => x.Category == category);
+
+            if (!string.IsNullOrEmpty(region) && region != "All")
+                query = query.Where(x => x.Region == region);
+
+            if (!string.IsNullOrEmpty(salesperson) && salesperson != "All")
+                query = query.Where(x => x.SalesPersonName == salesperson);
+
+            if (fromDate.HasValue)
+                query = query.Where(x => x.SaleDate >= fromDate.V`alue);
+
+            if (toDate.HasValue)
+                query = query.Where(x => x.SaleDate <= toDate.Value);
+
+            // Get total count for pagination
+            var totalItems = await query.CountAsync();
+
+            // Get paged data
+            var items = await query
+                .OrderByDescending(x => x.SaleDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // Get statistics (menggunakan query yang sama)
+            var totalSales = await query.SumAsync(x => x.Amount);
+            var averageSale = await query.AverageAsync(x => (decimal?)x.Amount) ?? 0;
+            var totalTransactions = await query.CountAsync();
+
+            // Get dropdown options
+            var categories = await _context.SalesData
+                .Select(x => x.Category)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToListAsync();
+
+            var regions = await _context.SalesData
+                .Select(x => x.Region)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToListAsync();
+
+            var salesPersons = await _context.SalesData
+                .Select(x => x.SalesPersonName)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToListAsync();
+
+            // Calculate pagination
+            var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            // ViewBag data for dropdowns
+            ViewBag.Categories = GetSelectList(categories);
+            ViewBag.Regions = GetSelectList(regions);
+            ViewBag.SalesPersons = GetSelectList(salesPersons);
+            ViewBag.PageSizes = new SelectList(new[] { 10, 25, 50, 100 }, pageSize);
+
+            // Current filter values
+            ViewBag.CurrentCategory = category;
+            ViewBag.CurrentRegion = region;
+            ViewBag.CurrentSalesperson = salesperson;
+            ViewBag.CurrentFromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.CurrentToDate = toDate?.ToString("yyyy-MM-dd");
+
+            // Statistics
+            ViewBag.TotalSales = totalSales;
+            ViewBag.AverageSale = averageSale;
+            ViewBag.TotalTransactions = totalTransactions;
+
+            // Pagination info
+            ViewBag.CurrentPage = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalItems = totalItems;
+            ViewBag.HasPrevious = page > 1;
+            ViewBag.HasNext = page < totalPages;
+
+            return View(items);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GetChartData(string category = "", string region = "", string salesperson = "", 
+            DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            var query = _context.SalesData.AsQueryable();
+
+            // Apply same filters
+            if (!string.IsNullOrEmpty(category) && category != "All")
+                query = query.Where(x => x.Category == category);
+
+            if (!string.IsNullOrEmpty(region) && region != "All")
+                query = query.Where(x => x.Region == region);
+
+            if (!string.IsNullOrEmpty(salesperson) && salesperson != "All")
+                query = query.Where(x => x.SalesPersonName == salesperson);
+
+            if (fromDate.HasValue)
+                query = query.Where(x => x.SaleDate >= fromDate.Value);
+
+            if (toDate.HasValue)
+                query = query.Where(x => x.SaleDate <= toDate.Value);
+
+            var chartData = await query
+                .GroupBy(x => new { x.SaleDate.Year, x.SaleDate.Month })
+                .Select(g => new {
+                    Label = g.Key.Year + "-" + g.Key.Month.ToString().PadLeft(2, '0'),
+                    Value = g.Sum(x => x.Amount)
+                })
+                .OrderBy(x => x.Label)
+                .ToListAsync();
+
+            return Json(chartData);
+        }
+
+        // Method untuk mendapatkan summary statistics
+        [HttpGet]
+        public async Task<IActionResult> GetSummaryStats()
+        {
+            var today = DateTime.Today;
+            var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
+            var startOfMonth = new DateTime(today.Year, today.Month, 1);
+
+            var todaySales = await _context.SalesData
+                .Where(x => x.SaleDate.Date == today)
+                .SumAsync(x => (decimal?)x.Amount) ?? 0;
+
+            var weekSales = await _context.SalesData
+                .Where(x => x.SaleDate.Date >= startOfWeek)
+                .SumAsync(x => (decimal?)x.Amount) ?? 0;
+
+            var monthSales = await _context.SalesData
+                .Where(x => x.SaleDate >= startOfMonth)
+                .SumAsync(x => (decimal?)x.Amount) ?? 0;
+
+            var totalSales = await _context.SalesData
+                .SumAsync(x => (decimal?)x.Amount) ?? 0;
+
+            return Json(new
+            {
+                todaySales = todaySales,
+                weekSales = weekSales,
+                monthSales = monthSales,
+                totalSales = totalSales
+            });
+        }
+
+        private SelectList GetSelectList(List<string> items)
+        {
+            var list = new List<string> { "All" };
+            list.AddRange(items);
+            return new SelectList(list);
+        }
+    }
+}
