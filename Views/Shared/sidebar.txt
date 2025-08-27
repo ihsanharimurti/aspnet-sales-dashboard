@@ -1,10 +1,15 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASP.NET Sidebar Layout</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - My Application</title>
+    
+    <!-- Bootstrap and other CSS -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
     <style>
         * {
             margin: 0;
@@ -56,6 +61,12 @@
             font-weight: 700;
             color: #2d3748;
             transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .logo:hover {
+            color: #667eea;
+            text-decoration: none;
         }
 
         .logo i {
@@ -114,6 +125,7 @@
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
             color: #667eea;
             transform: translateX(4px);
+            text-decoration: none;
         }
 
         .nav-link.active {
@@ -199,27 +211,6 @@
             overflow-y: auto;
         }
 
-        .content-card {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(20px);
-            padding: 32px;
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .page-title {
-            font-size: 28px;
-            font-weight: 700;
-            color: #2d3748;
-            margin-bottom: 8px;
-        }
-
-        .page-subtitle {
-            color: #718096;
-            margin-bottom: 24px;
-        }
-
         /* Mobile Responsive */
         @media (max-width: 768px) {
             .sidebar {
@@ -296,7 +287,15 @@
         .content-area::-webkit-scrollbar-thumb:hover {
             background: rgba(102, 126, 234, 0.5);
         }
+
+        /* Override Bootstrap container for full width */
+        .container-fluid {
+            padding: 0;
+            max-width: none;
+        }
     </style>
+
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     <div class="layout-container">
@@ -306,10 +305,10 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <div class="logo">
+                <a asp-area="" asp-controller="Home" asp-action="Index" class="logo">
                     <i class="fas fa-cube"></i>
                     <span class="logo-text">MyApp</span>
-                </div>
+                </a>
                 <button class="toggle-btn" id="toggleBtn">
                     <i class="fas fa-chevron-left"></i>
                 </button>
@@ -317,9 +316,15 @@
 
             <nav class="nav-menu">
                 <div class="nav-item">
-                    <a href="#" class="nav-link active">
+                    <a asp-area="" asp-controller="Home" asp-action="Index" class="nav-link">
                         <i class="fas fa-home"></i>
-                        <span class="nav-text">Dashboard</span>
+                        <span class="nav-text">Home</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy" class="nav-link">
+                        <i class="fas fa-shield-alt"></i>
+                        <span class="nav-text">Privacy</span>
                     </a>
                 </div>
                 <div class="nav-item">
@@ -346,18 +351,6 @@
                         <span class="nav-text">Reports</span>
                     </a>
                 </div>
-                <div class="nav-item">
-                    <a href="#" class="nav-link">
-                        <i class="fas fa-envelope"></i>
-                        <span class="nav-text">Messages</span>
-                    </a>
-                </div>
-                <div class="nav-item">
-                    <a href="#" class="nav-link">
-                        <i class="fas fa-question-circle"></i>
-                        <span class="nav-text">Help</span>
-                    </a>
-                </div>
             </nav>
         </aside>
 
@@ -368,39 +361,29 @@
                     <button class="mobile-menu-btn" id="mobileMenuBtn">
                         <i class="fas fa-bars"></i>
                     </button>
-                    <span class="breadcrumb">Home / Dashboard</span>
+                    <span class="breadcrumb">@ViewData["Title"]</span>
                 </div>
                 <div class="user-info">
-                    <span>John Doe</span>
-                    <div class="avatar">JD</div>
+                    <partial name="_LoginPartial" />
                 </div>
             </div>
 
             <div class="content-area">
-                <div class="content-card">
-                    <h1 class="page-title">Welcome to Dashboard</h1>
-                    <p class="page-subtitle">This is your main content area where you can add your ASP.NET views and components.</p>
-                    
-                    <p>This sidebar layout includes:</p>
-                    <ul style="margin: 16px 0; padding-left: 20px; color: #4a5568; line-height: 1.6;">
-                        <li>Smooth animations and transitions</li>
-                        <li>Collapsible sidebar functionality</li>
-                        <li>Mobile-responsive design</li>
-                        <li>Modern glassmorphism effects</li>
-                        <li>Beautiful gradient backgrounds</li>
-                        <li>Font Awesome icons</li>
-                        <li>Clean typography and spacing</li>
-                    </ul>
-
-                    <p style="margin-top: 24px; color: #718096;">
-                        You can easily integrate this layout into your ASP.NET application by converting it to Razor syntax and adding your specific content and navigation items.
-                    </p>
+                <div class="container-fluid">
+                    <main role="main">
+                        @RenderBody()
+                    </main>
                 </div>
             </div>
         </main>
     </div>
 
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
     <script>
+        // Sidebar functionality
         const sidebar = document.getElementById('sidebar');
         const toggleBtn = document.getElementById('toggleBtn');
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
@@ -429,19 +412,19 @@
             mobileOverlay.classList.remove('active');
         });
 
-        // Active link functionality
+        // Active link highlighting based on current URL
         const navLinks = document.querySelectorAll('.nav-link');
+        const currentPath = window.location.pathname;
+        
         navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                navLinks.forEach(l => l.classList.remove('active'));
+            const linkPath = new URL(link.href).pathname;
+            if (linkPath === currentPath) {
                 link.classList.add('active');
-            });
-        });
-
-        // Close mobile menu when clicking on nav link
-        navLinks.forEach(link => {
+            }
+            
+            // Add click handler
             link.addEventListener('click', () => {
+                // Close mobile menu if open
                 if (window.innerWidth <= 768) {
                     sidebar.classList.remove('mobile-open');
                     mobileOverlay.classList.remove('active');
@@ -457,5 +440,7 @@
             }
         });
     </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
