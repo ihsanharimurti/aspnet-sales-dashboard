@@ -10,6 +10,10 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
+    <!-- Custom CSS Link -->
+    <link rel="stylesheet" href="~/css/sidebar-layout.css" asp-append-version="true" />
+    
+    <!-- Inline styles for immediate rendering -->
     <style>
         * {
             margin: 0;
@@ -29,7 +33,6 @@
             position: relative;
         }
 
-        /* Sidebar Styles */
         .sidebar {
             width: 280px;
             background: rgba(255, 255, 255, 0.95);
@@ -161,7 +164,6 @@
             margin-right: 0;
         }
 
-        /* Main Content */
         .main-content {
             flex: 1;
             display: flex;
@@ -211,65 +213,43 @@
             overflow-y: auto;
         }
 
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .sidebar {
-                position: fixed;
-                left: -280px;
-                top: 0;
-                height: 100vh;
-                z-index: 2000;
-            }
-
-            .sidebar.mobile-open {
-                left: 0;
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-
-            .mobile-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.5);
-                z-index: 1500;
-                opacity: 0;
-                visibility: hidden;
-                transition: all 0.3s ease;
-            }
-
-            .mobile-overlay.active {
-                opacity: 1;
-                visibility: visible;
-            }
-
-            .mobile-menu-btn {
-                display: block;
-                background: none;
-                border: none;
-                font-size: 20px;
-                color: #4a5568;
-                cursor: pointer;
-                padding: 8px;
-            }
+        .mobile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1500;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
         }
 
-        @media (min-width: 769px) {
-            .mobile-menu-btn {
-                display: none;
-            }
+        .mobile-overlay.active {
+            opacity: 1;
+            visibility: visible;
         }
 
-        /* Smooth animations */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #4a5568;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .container-fluid {
+            padding: 0;
+            max-width: none;
+        }
+
         .sidebar, .nav-link, .nav-text, .logo-text {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Custom scrollbar */
         .content-area::-webkit-scrollbar {
             width: 6px;
         }
@@ -288,12 +268,49 @@
             background: rgba(102, 126, 234, 0.5);
         }
 
-        /* Override Bootstrap container for full width */
-        .container-fluid {
-            padding: 0;
-            max-width: none;
-        }
+        /* Mobile styles - avoiding @media in Razor */
     </style>
+    
+    <script>
+        // Apply mobile styles via JavaScript to avoid @media conflicts
+        function applyMobileStyles() {
+            const sidebar = document.getElementById('sidebar');
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mainContent = document.querySelector('.main-content');
+            
+            if (window.innerWidth <= 768) {
+                // Mobile styles
+                if (sidebar) {
+                    sidebar.style.position = 'fixed';
+                    sidebar.style.left = '-280px';
+                    sidebar.style.top = '0';
+                    sidebar.style.height = '100vh';
+                    sidebar.style.zIndex = '2000';
+                }
+                if (mobileMenuBtn) {
+                    mobileMenuBtn.style.display = 'block';
+                }
+                if (mainContent) {
+                    mainContent.style.marginLeft = '0';
+                }
+            } else {
+                // Desktop styles
+                if (sidebar) {
+                    sidebar.style.position = 'relative';
+                    sidebar.style.left = '0';
+                    sidebar.style.height = 'auto';
+                    sidebar.style.zIndex = '1000';
+                }
+                if (mobileMenuBtn) {
+                    mobileMenuBtn.style.display = 'none';
+                }
+            }
+        }
+        
+        // Apply on load and resize
+        document.addEventListener('DOMContentLoaded', applyMobileStyles);
+        window.addEventListener('resize', applyMobileStyles);
+    </script>
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
