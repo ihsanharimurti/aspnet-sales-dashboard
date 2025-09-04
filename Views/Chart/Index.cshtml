@@ -1,0 +1,373 @@
+@{
+    ViewData["Title"] = "Custom Chart Generator";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>@ViewData["Title"]</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .filter-container {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            min-height: 500px;
+        }
+        .axis-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .chart-controls {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #6c757d;
+        }
+        .chart-title {
+            color: #007bff;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>📈 Custom Chart Generator</h1>
+            <a href="/Dashboard" class="btn btn-outline-primary">← Back to Dashboard</a>
+        </div>
+
+        <!-- Chart Type and Axis Selection -->
+        <div class="axis-container">
+            <h5 class="chart-title">Chart Configuration</h5>
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">Chart Type</label>
+                    <select id="chartType" class="form-select">
+                        <option value="line">Line Chart</option>
+                        <option value="bar">Bar Chart</option>
+                        <option value="pie">Pie Chart</option>
+                        <option value="doughnut">Doughnut Chart</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">X-Axis (Horizontal)</label>
+                    @Html.DropDownList("xAxis", (SelectList)ViewBag.XAxisOptions, new { @class = "form-select", @id = "xAxisSelect" })
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Y-Axis (Vertical)</label>
+                    @Html.DropDownList("yAxis", (SelectList)ViewBag.YAxisOptions, new { @class = "form-select", @id = "yAxisSelect" })
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div>
+                        <button type="button" class="btn btn-primary" onclick="generateChart()">Generate Chart</button>
+                        <button type="button" class="btn btn-success" onclick="downloadChart()">📥 Download</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Filters -->
+        <div class="filter-container">
+            <h5>Data Filters</h5>
+            <div class="row">
+                <div class="col-md-2">
+                    <label class="form-label">Category</label>
+                    @Html.DropDownList("category", (SelectList)ViewBag.Categories, new { @class = "form-select" })
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Region</label>
+                    @Html.DropDownList("region", (SelectList)ViewBag.Regions, new { @class = "form-select" })
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Salesperson</label>
+                    @Html.DropDownList("salesperson", (SelectList)ViewBag.SalesPersons, new { @class = "form-select" })
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="fromDate" class="form-control" value="@ViewBag.CurrentFromDate">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="toDate" class="form-control" value="@ViewBag.CurrentToDate">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">Clear Filters</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Display -->
+        <div class="chart-container">
+            <div class="loading" id="loadingIndicator">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Generating chart...</p>
+            </div>
+            <div id="chartTitle" class="chart-title text-center" style="display: none;"></div>
+            <div style="position: relative; height: 400px;">
+                <canvas id="customChart" style="display: none;"></canvas>
+            </div>
+            <div id="noDataMessage" class="text-center text-muted" style="display: none; padding: 50px;">
+                <h5>No data available for the selected filters</h5>
+                <p>Please adjust your filters and try again.</p>
+            </div>
+        </div>
+
+        <!-- Chart Statistics -->
+        <div class="row" id="chartStats" style="display: none;">
+            <div class="col-md-12">
+                <div class="axis-container">
+                    <h5 class="chart-title">Chart Statistics</h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h6 class="text-muted">Data Points</h6>
+                                <div class="h4 text-primary" id="dataPointCount">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h6 class="text-muted">Maximum Value</h6>
+                                <div class="h4 text-success" id="maxValue">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h6 class="text-muted">Minimum Value</h6>
+                                <div class="h4 text-warning" id="minValue">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h6 class="text-muted">Total/Average</h6>
+                                <div class="h4 text-info" id="totalValue">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentChart;
+
+        function generateChart() {
+            showLoading(true);
+
+            const formData = {
+                category: $('select[name="category"]').val(),
+                region: $('select[name="region"]').val(),
+                salesperson: $('select[name="salesperson"]').val(),
+                fromDate: $('input[name="fromDate"]').val(),
+                toDate: $('input[name="toDate"]').val(),
+                xAxis: $('#xAxisSelect').val(),
+                yAxis: $('#yAxisSelect').val()
+            };
+
+            $.ajax({
+                url: '@Url.Action("GetCustomChartData", "Chart")',
+                type: 'POST',
+                data: formData,
+                success: function(data) {
+                    showLoading(false);
+                    
+                    if (data.labels.length === 0) {
+                        showNoData(true);
+                        showChart(false);
+                        showStats(false);
+                        return;
+                    }
+
+                    showNoData(false);
+                    showChart(true);
+                    showStats(true);
+                    renderChart(data, $('#chartType').val());
+                    updateStatistics(data);
+                },
+                error: function() {
+                    showLoading(false);
+                    alert('Error generating chart. Please try again.');
+                }
+            });
+        }
+
+        function renderChart(data, chartType) {
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            const ctx = document.getElementById('customChart').getContext('2d');
+            const xAxisLabel = $('#xAxisSelect option:selected').text();
+            const yAxisLabel = $('#yAxisSelect option:selected').text();
+
+            $('#chartTitle').text(`${yAxisLabel} by ${xAxisLabel}`);
+
+            const chartConfig = {
+                type: chartType,
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: data.yAxisLabel,
+                        data: data.values,
+                        borderColor: getChartColors(data.values.length).border,
+                        backgroundColor: chartType === 'pie' || chartType === 'doughnut' 
+                            ? getChartColors(data.values.length).background 
+                            : getChartColors(data.values.length).background[0],
+                        tension: 0.4,
+                        fill: chartType === 'line'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: chartType === 'pie' || chartType === 'doughnut',
+                            position: 'right'
+                        }
+                    },
+                    scales: chartType === 'pie' || chartType === 'doughnut' ? {} : {
+                        x: {
+                            title: {
+                                display: true,
+                                text: data.xAxisLabel
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: data.yAxisLabel
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return $('#yAxisSelect').val() === 'Amount' || $('#yAxisSelect').val() === 'Average'
+                                        ? '$' + value.toLocaleString()
+                                        : value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            currentChart = new Chart(ctx, chartConfig);
+        }
+
+        function getChartColors(count) {
+            const colors = [
+                '#007bff', '#28a745', '#dc3545', '#ffc107', '#17a2b8',
+                '#6f42c1', '#e83e8c', '#fd7e14', '#20c997', '#6c757d'
+            ];
+            
+            const borderColors = colors.slice(0, count);
+            const backgroundColors = borderColors.map(color => color + '40');
+            
+            return {
+                border: borderColors,
+                background: backgroundColors
+            };
+        }
+
+        function updateStatistics(data) {
+            const values = data.values;
+            const maxVal = Math.max(...values);
+            const minVal = Math.min(...values);
+            const total = values.reduce((a, b) => a + b, 0);
+            const avg = total / values.length;
+
+            $('#dataPointCount').text(values.length);
+            $('#maxValue').text(formatValue(maxVal, $('#yAxisSelect').val()));
+            $('#minValue').text(formatValue(minVal, $('#yAxisSelect').val()));
+            
+            if ($('#yAxisSelect').val() === 'Count') {
+                $('#totalValue').text(total.toLocaleString() + ' total');
+            } else {
+                $('#totalValue').text(formatValue(avg, $('#yAxisSelect').val()) + ' avg');
+            }
+        }
+
+        function formatValue(value, yAxisType) {
+            if (yAxisType === 'Amount' || yAxisType === 'Average') {
+                return '$' + value.toLocaleString();
+            }
+            return Math.round(value).toLocaleString();
+        }
+
+        function downloadChart() {
+            if (!currentChart) {
+                alert('Please generate a chart first.');
+                return;
+            }
+
+            const link = document.createElement('a');
+            link.download = 'sales-chart.png';
+            link.href = currentChart.toBase64Image();
+            link.click();
+        }
+
+        function clearFilters() {
+            $('select[name="category"]').val('All');
+            $('select[name="region"]').val('All');
+            $('select[name="salesperson"]').val('All');
+            $('input[name="fromDate"]').val('');
+            $('input[name="toDate"]').val('');
+        }
+
+        function showLoading(show) {
+            $('#loadingIndicator').toggle(show);
+        }
+
+        function showChart(show) {
+            $('#customChart').toggle(show);
+            $('#chartTitle').toggle(show);
+        }
+
+        function showNoData(show) {
+            $('#noDataMessage').toggle(show);
+        }
+
+        function showStats(show) {
+            $('#chartStats').toggle(show);
+        }
+
+        // Auto-generate chart on page load
+        $(document).ready(function() {
+            generateChart();
+        });
+
+        // Auto-refresh chart when axis selection changes
+        $('#xAxisSelect, #yAxisSelect, #chartType').change(function() {
+            if ($('#customChart').is(':visible')) {
+                generateChart();
+            }
+        });
+    </script>
+</body>
+</html>

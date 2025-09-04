@@ -3,52 +3,474 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - MyDashboard</title>
+    <title>@ViewData["Title"] - My Application</title>
+    
+    <!-- Bootstrap and other CSS -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/MyDashboard.styles.css" asp-append-version="true" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS Link -->
+    <link rel="stylesheet" href="~/css/sidebar-layout.css" asp-append-version="true" />
+    
+    <!-- Inline styles for immediate rendering -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .layout-container {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 1000;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #2d3748;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .logo:hover {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .logo i {
+            color: #667eea;
+            font-size: 24px;
+        }
+
+        .logo-text {
+            transition: all 0.3s ease;
+        }
+
+        .collapsed .logo-text {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #718096;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .nav-menu {
+            padding: 16px 0;
+        }
+
+        .nav-item {
+            margin: 4px 16px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link:hover {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            color: #667eea;
+            transform: translateX(4px);
+            text-decoration: none;
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .nav-link i {
+            width: 20px;
+            margin-right: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .nav-text {
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .collapsed .nav-text {
+            opacity: 0;
+            width: 0;
+            margin-left: 0;
+        }
+
+        .collapsed .nav-link {
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .collapsed .nav-link i {
+            margin-right: 0;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .top-bar {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 16px 32px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .breadcrumb {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #4a5568;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .content-area {
+            padding: 32px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .mobile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1500;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #4a5568;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .container-fluid {
+            padding: 0;
+            max-width: none;
+        }
+
+        .sidebar, .nav-link, .nav-text, .logo-text {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .content-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .content-area::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .content-area::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.3);
+            border-radius: 3px;
+        }
+
+        .content-area::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.5);
+        }
+
+    </style>
+    
+    <script>
+        function applyMobileStyles() {
+            const sidebar = document.getElementById('sidebar');
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mainContent = document.querySelector('.main-content');
+            
+            if (window.innerWidth <= 768) {
+                // Mobile styles
+                if (sidebar) {
+                    sidebar.style.position = 'fixed';
+                    sidebar.style.left = '-280px';
+                    sidebar.style.top = '0';
+                    sidebar.style.height = '100vh';
+                    sidebar.style.zIndex = '2000';
+                }
+                if (mobileMenuBtn) {
+                    mobileMenuBtn.style.display = 'block';
+                }
+                if (mainContent) {
+                    mainContent.style.marginLeft = '0';
+                }
+            } else {
+                // Desktop styles
+                if (sidebar) {
+                    sidebar.style.position = 'relative';
+                    sidebar.style.left = '0';
+                    sidebar.style.height = 'auto';
+                    sidebar.style.zIndex = '1000';
+                }
+                if (mobileMenuBtn) {
+                    mobileMenuBtn.style.display = 'none';
+                }
+            }
+        }
+        
+        // Apply on load and resize
+        document.addEventListener('DOMContentLoaded', applyMobileStyles);
+        window.addEventListener('resize', applyMobileStyles);
+    </script>
+
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">MyDashboard</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+    <div class="layout-container">
+        <!-- Mobile Overlay -->
+        <div class="mobile-overlay" id="mobileOverlay"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a asp-area="" asp-controller="Home" asp-action="Index" class="logo">
+                    <i class="fas fa-cube"></i>
+                    <span class="logo-text">MyApp</span>
+                </a>
+                <button class="toggle-btn" id="toggleBtn">
+                    <i class="fas fa-chevron-left"></i>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+            </div>
 
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
-                        </li>
+            <nav class="nav-menu">
+                <div class="nav-item">
+                    <a asp-area="" asp-controller="" asp-action="Index" class="nav-link">
+                        <i class="fas fa-home"></i>
+                        <span class="nav-text">Home</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy" class="nav-link">
+                        <i class="fas fa-shield-alt"></i>
+                        <span class="nav-text">Privacy</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a class="nav-link">
+                        <i class="fas fa-users"></i>
+                        <span class="nav-text">Users</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/Chart" class="nav-link">
+                        <i class="fas fa-chart-bar"></i>
+                        <span class="nav-text">Analytics</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a class="nav-link">
+                        <i class="fas fa-cog"></i>
+                        <span class="nav-text">Settings</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a class="nav-link">
+                        <i class="fas fa-file-alt"></i>
+                        <span class="nav-text">Reports</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
 
-                    </ul>
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="top-bar">
+                <div>
+                    <button class="mobile-menu-btn" id="mobileMenuBtn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <span class="breadcrumb">@ViewData["Title"]</span>
+                </div>
+                <div class="user-info">
                 </div>
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
+
+            <div class="content-area">
+                <div class="container-fluid">
+                    <main role="main">
+                        @RenderBody()
+                    </main>
+                </div>
+            </div>
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - MyDashboard - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        // Sidebar functionality
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileOverlay = document.getElementById('mobileOverlay');
+
+        // Desktop toggle functionality
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            const icon = toggleBtn.querySelector('i');
+            
+            if (sidebar.classList.contains('collapsed')) {
+                icon.className = 'fas fa-chevron-right';
+            } else {
+                icon.className = 'fas fa-chevron-left';
+            }
+        });
+
+        // Mobile menu functionality
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.add('mobile-open');
+            mobileOverlay.classList.add('active');
+        });
+
+        mobileOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('mobile-open');
+            mobileOverlay.classList.remove('active');
+        });
+
+        // Active link highlighting based on current URL
+        const navLinks = document.querySelectorAll('.nav-link');
+        const currentPath = window.location.pathname;
+        
+        navLinks.forEach(link => {
+            const linkPath = new URL(link.href).pathname;
+            if (linkPath === currentPath) {
+                link.classList.add('active');
+            }
+            
+            // Add click handler
+            link.addEventListener('click', () => {
+                // Close mobile menu if open
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.remove('mobile-open');
+                    mobileOverlay.classList.remove('active');
+                }
+            });
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('mobile-open');
+                mobileOverlay.classList.remove('active');
+            }
+        });
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
+
+
+    <div class="submenu" id="analytics-submenu">
+        <a asp-controller="Analytics" asp-action="Dashboard" class="submenu-link">
+            <i class="fas fa-tachometer-alt"></i>
+            <span class="nav-text">Dashboard</span>
+        </a>
+        <a asp-controller="Analytics" asp-action="Reports" class="submenu-link">
+            <i class="fas fa-file-chart-line"></i>
+            <span class="nav-text">Reports</span>
+        </a>
+        <a asp-controller="Analytics" asp-action="Traffic" class="submenu-link">
+            <i class="fas fa-chart-line"></i>
+            <span class="nav-text">Traffic</span>
+        </a>
+    </div>
