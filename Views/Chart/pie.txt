@@ -21,3 +21,55 @@
         }
     });
 </script>
+
+
+@model List<YourNamespace.RobotUsageDto>
+@{
+    var robots = Model.Select(m => m.NamaRobot).Distinct().ToList();
+    var baterai = Model.Select(m => m.JenisBaterai).Distinct().ToList();
+}
+
+<canvas id="batteryChart"></canvas>
+
+<script>
+    var ctx = document.getElementById('batteryChart').getContext('2d');
+
+    var data = {
+        labels: @Html.Raw(JsonConvert.SerializeObject(robots)),
+        datasets: [
+            @foreach (var b in baterai)
+            {
+                var values = robots.Select(r =>
+                    Model.FirstOrDefault(m => m.NamaRobot == r && m.JenisBaterai == b)?.RataPenggunaan ?? 0
+                ).ToList();
+
+                @: {
+                @:     label: "@b",
+                @:     data: @Html.Raw(JsonConvert.SerializeObject(values)),
+                @:     backgroundColor: getRandomColor(),
+                @: },
+            }
+        ]
+    };
+
+    var config = {
+        type: 'bar',
+        data: data,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' }
+            },
+            scales: {
+                x: { stacked: true },
+                y: { stacked: true }
+            }
+        }
+    };
+
+    new Chart(ctx, config);
+
+    function getRandomColor() {
+        return 'rgba(' + Math.floor(Math.random()*255) + ',' + Math.floor(Math.random()*255) + ',' + Math.floor(Math.random()*255) + ',0.7)';
+    }
+</script>
